@@ -282,20 +282,82 @@ class Database:
         if cmd == "SET":
           sub = rest.split(" ", 1)
           if len(sub) == 2:
-            self._commit_set(sub[0], sub[1])
+            k, v = sub[0], sub[1]
+            idx = -1
+            for i, item in enumerate(self.index):
+              if item[0] == k:
+                idx = i
+                break
+            if idx != -1:
+              self.index[idx][1] = "string"
+              self.index[idx][2] = v
+            else:
+              self.index.append([k, "string", v, None])
         elif cmd == "DEL":
-          self._commit_del(rest)
+          k = rest
+          idx = -1
+          for i, item in enumerate(self.index):
+            if item[0] == k:
+              idx = i
+              break
+          if idx != -1:
+            self.index.pop(idx)
         elif cmd == "HSET":
           sub = rest.split(" ", 2)
           if len(sub) == 3:
-            self.hset(sub[0], sub[1], sub[2])
+            k, field, val = sub[0], sub[1], sub[2]
+            idx = -1
+            for i, item in enumerate(self.index):
+              if item[0] == k:
+                idx = i
+                break
+            if idx == -1:
+              self.index.append([k, "hash", [[field, val]], None])
+            else:
+              if self.index[idx][1] != "hash":
+                self.index[idx][1] = "hash"
+                self.index[idx][2] = []
+              found = False
+              for f in self.index[idx][2]:
+                if f[0] == field:
+                  f[1] = val
+                  found = True
+                  break
+              if not found:
+                self.index[idx][2].append([field, val])
         elif cmd == "LPUSH":
           sub = rest.split(" ", 1)
           if len(sub) == 2:
-            self.lpush(sub[0], sub[1])
+            k, val = sub[0], sub[1]
+            idx = -1
+            for i, item in enumerate(self.index):
+              if item[0] == k:
+                idx = i
+                break
+            if idx == -1:
+              self.index.append([k, "list", [val], None])
+            else:
+              if self.index[idx][1] != "list":
+                self.index[idx][1] = "list"
+                self.index[idx][2] = [val]
+              else:
+                self.index[idx][2].insert(0, val)
         elif cmd == "RPUSH":
           sub = rest.split(" ", 1)
           if len(sub) == 2:
-            self.rpush(sub[0], sub[1])
+            k, val = sub[0], sub[1]
+            idx = -1
+            for i, item in enumerate(self.index):
+              if item[0] == k:
+                idx = i
+                break
+            if idx == -1:
+              self.index.append([k, "list", [val], None])
+            else:
+              if self.index[idx][1] != "list":
+                self.index[idx][1] = "list"
+                self.index[idx][2] = [val]
+              else:
+                self.index[idx][2].append(val)
         elif cmd == "FLUSHDB":
           self.index = []
