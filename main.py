@@ -12,7 +12,10 @@ def main():
     line = line.strip()
     if not line:
       continue
-    tokens = line.split(" ")
+    # Use split() to handle whitespace/tabs
+    tokens = line.split()
+    if not tokens:
+      continue
     cmd = tokens[0].upper()
 
     # command-line interface command router
@@ -48,8 +51,7 @@ def main():
     elif cmd == "HGET" and len(tokens) == 3:
       print(db.hget(tokens[1], tokens[2]))
     elif cmd == "HGETALL" and len(tokens) == 2:
-      res = db.hgetall(tokens[1])
-      for r in res:
+      for r in db.hgetall(tokens[1]):
         print(r)
     elif cmd == "LPUSH" and len(tokens) >= 3:
       print(db.lpush(tokens[1], " ".join(tokens[2:])))
