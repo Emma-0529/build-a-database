@@ -274,20 +274,28 @@ class Database:
         line = line.strip()
         if not line:
           continue
-        parts = line.split(" ", 2)
+        parts = line.split(" ", 1)
+        if len(parts) < 2:
+          continue
         cmd = parts[0].upper()
-        if cmd == "SET" and len(parts) == 3:
-          sub = parts[2].split(" ", 1)
-          self._commit_set(parts[1], sub[0] if len(sub) == 1 else parts[2])
-        elif cmd == "DEL" and len(parts) == 2:
-          self._commit_del(parts[1])
-        elif cmd == "HSET" and len(parts) == 3:
-          sub = parts[2].split(" ", 1)
+        rest = parts[1]
+        if cmd == "SET":
+          sub = rest.split(" ", 1)
           if len(sub) == 2:
-            self.hset(parts[1], sub[0], sub[1])
-        elif cmd == "LPUSH" and len(parts) == 3:
-          sub = parts[2].split(" ", 1)
+            self._commit_set(sub[0], sub[1])
+        elif cmd == "DEL":
+          self._commit_del(rest)
+        elif cmd == "HSET":
+          sub = rest.split(" ", 2)
+          if len(sub) == 3:
+            self.hset(sub[0], sub[1], sub[2])
+        elif cmd == "LPUSH":
+          sub = rest.split(" ", 1)
           if len(sub) == 2:
-            self.lpush(parts[1], sub[1])
+            self.lpush(sub[0], sub[1])
+        elif cmd == "RPUSH":
+          sub = rest.split(" ", 1)
+          if len(sub) == 2:
+            self.rpush(sub[0], sub[1])
         elif cmd == "FLUSHDB":
           self.index = []
