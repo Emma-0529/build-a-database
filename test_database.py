@@ -27,7 +27,7 @@ class TestDatabase(unittest.TestCase):
     # test transaction commands
     self.db.begin()
     self.db.set("t_key", "t_val")
-    self.assertEqual(self.db.get("t_key"), "(nil)")
+    self.assertEqual(self.db.get("t_key"), "t_val")
     self.db.commit()
     self.assertEqual(self.db.get("t_key"), "t_val")
 

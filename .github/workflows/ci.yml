@@ -6,10 +6,12 @@ jobs:
   test:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v4
-    - name: Set up Python
-      uses: actions/setup-python@v5
-      with:
-        python-version: '3.10'
-    - name: Run Unit Tests
-      run: python3 test_database.py
+      - uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+      - name: Run Unit Tests
+        run: python3 test_database.py
+      - name: Lint Check
+        run: python3 -m py_compile database.py main.py test_database.py

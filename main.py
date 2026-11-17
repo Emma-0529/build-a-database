@@ -30,6 +30,34 @@ def main():
       print(db.incr(tokens[1]))
     elif cmd == "DECR" and len(tokens) == 2:
       print(db.decr(tokens[1]))
+    elif cmd == "MSET" and len(tokens) >= 3:
+      print(db.mset(tokens[1:]))
+    elif cmd == "MGET" and len(tokens) >= 2:
+      for r in db.mget(tokens[1:]):
+        print(r)
+    elif cmd == "EXPIRE" and len(tokens) == 3:
+      print(db.expire(tokens[1], tokens[2]))
+    elif cmd == "TTL" and len(tokens) == 2:
+      print(db.ttl(tokens[1]))
+    elif cmd == "RANGE" and len(tokens) == 3:
+      for r in db.range_keys(tokens[1], tokens[2]):
+        print(r)
+      print("END")
+    elif cmd == "HSET" and len(tokens) >= 4:
+      print(db.hset(tokens[1], tokens[2], " ".join(tokens[3:])))
+    elif cmd == "HGET" and len(tokens) == 3:
+      print(db.hget(tokens[1], tokens[2]))
+    elif cmd == "HGETALL" and len(tokens) == 2:
+      res = db.hgetall(tokens[1])
+      for r in res:
+        print(r)
+    elif cmd == "LPUSH" and len(tokens) >= 3:
+      print(db.lpush(tokens[1], " ".join(tokens[2:])))
+    elif cmd == "RPUSH" and len(tokens) >= 3:
+      print(db.rpush(tokens[1], " ".join(tokens[2:])))
+    elif cmd == "LRANGE" and len(tokens) == 4:
+      for r in db.lrange(tokens[1], tokens[2], tokens[3]):
+        print(r)
     elif cmd == "BEGIN":
       print(db.begin())
     elif cmd == "COMMIT":
