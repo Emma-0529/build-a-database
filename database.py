@@ -8,6 +8,7 @@ class Database:
 
   def __init__(self):
     # in-memory index structure
+    # Format: [key, type, value, expiry]
     self.index = []
     # transactions state management
     self.in_transaction = False
@@ -18,7 +19,8 @@ class Database:
     current_time = time.time()
     for i, item in enumerate(self.index):
       if item[0] == key:
-        if len(item) > 2 and item[2] is not None and current_time > item[2]:
+        # check key expiration during linear scan
+        if item[3] is not None and current_time > item[3]:
           self.index.pop(i)
           return -1
         return i
@@ -35,13 +37,11 @@ class Database:
     expiry = time.time() + float(ttl) if ttl is not None else None
     idx = self._find(key)
     if idx != -1:
-      self.index[idx][1] = value
-      if len(self.index[idx]) > 2:
-        self.index[idx][2] = expiry
-      else:
-        self.index[idx].append(expiry)
+      self.index[idx][1] = "string"
+      self.index[idx][2] = value
+      self.index[idx][3] = expiry
     else:
-      self.index.append([key, value, expiry])
+      self.index.append([key, "string", value, expiry])
     self._append_log(f"SET {key} {value}\n")
     return "OK"
 
@@ -55,9 +55,8 @@ class Database:
           return "(nil)"
 
     idx = self._find(key)
-    if idx != -1:
-      val = self.index[idx][1]
-      return str(val)
+    if idx != -1 and self.index[idx][1] == "string":
+      return str(self.index[idx][2])
     return "(nil)"
 
   def delete(self, key):
@@ -83,7 +82,7 @@ class Database:
   def incr(self, key):
     # INCR command - counters requirement
     idx = self._find(key)
-    val = int(self.index[idx][1]) if idx != -1 and str(self.index[idx][1]).isdigit() else 0
+    val = int(self.index[idx][2]) if idx != -1 and self.index[idx][1] == "string" and str(self.index[idx][2]).isdigit() else 0
     val += 1
     self.set(key, str(val))
     return str(val)
@@ -91,7 +90,7 @@ class Database:
   def decr(self, key):
     # DECR command - counters requirement
     idx = self._find(key)
-    val = int(self.index[idx][1]) if idx != -1 and str(self.index[idx][1]).isdigit() else 0
+    val = int(self.index[idx][2]) if idx != -1 and self.index[idx][1] == "string" and str(self.index[idx][2]).isdigit() else 0
     val -= 1
     self.set(key, str(val))
     return str(val)
@@ -111,10 +110,7 @@ class Database:
     idx = self._find(key)
     if idx != -1:
       expiry = time.time() + float(seconds)
-      if len(self.index[idx]) > 2:
-        self.index[idx][2] = expiry
-      else:
-        self.index[idx].append(expiry)
+      self.index[idx][3] = expiry
       return "(integer) 1"
     return "(integer) 0"
 
@@ -122,10 +118,11 @@ class Database:
     # TTL command - expiration requirement
     idx = self._find(key)
     if idx != -1:
-      if len(self.index[idx]) > 2 and self.index[idx][2] is not None:
-        remaining = int(self.index[idx][2] - time.time())
-        return str(max(0, remaining))
-      return "-1"
+      expiry = self.index[idx][3]
+      if expiry is None:
+        return "-1"
+      remaining = int(expiry - time.time())
+      return str(max(0, remaining))
     return "-2"
 
   def range_keys(self, start_key, end_key):
@@ -146,26 +143,27 @@ class Database:
     # HSET command - hashes requirement
     idx = self._find(key)
     if idx == -1:
-      self.index.append([key, [[field, value]], None])
+      self.index.append([key, "hash", [[field, value]], None])
     else:
-      if not isinstance(self.index[idx][1], list):
-        self.index[idx][1] = []
+      if self.index[idx][1] != "hash":
+        self.index[idx][1] = "hash"
+        self.index[idx][2] = []
       found = False
-      for f in self.index[idx][1]:
+      for f in self.index[idx][2]:
         if f[0] == field:
           f[1] = value
           found = True
           break
       if not found:
-        self.index[idx][1].append([field, value])
+        self.index[idx][2].append([field, value])
     self._append_log(f"HSET {key} {field} {value}\n")
     return "(integer) 1"
 
   def hget(self, key, field):
     # HGET command - hashes requirement
     idx = self._find(key)
-    if idx != -1 and isinstance(self.index[idx][1], list):
-      for f in self.index[idx][1]:
+    if idx != -1 and self.index[idx][1] == "hash":
+      for f in self.index[idx][2]:
         if f[0] == field:
           return str(f[1])
     return "(nil)"
@@ -173,9 +171,9 @@ class Database:
   def hgetall(self, key):
     # HGETALL command - hashes requirement
     idx = self._find(key)
-    if idx != -1 and isinstance(self.index[idx][1], list):
+    if idx != -1 and self.index[idx][1] == "hash":
       res = []
-      for f in self.index[idx][1]:
+      for f in self.index[idx][2]:
         res.append(f[0])
         res.append(str(f[1]))
       return res
@@ -185,33 +183,35 @@ class Database:
     # LPUSH command - lists requirement
     idx = self._find(key)
     if idx == -1:
-      self.index.append([key, [value], None])
+      self.index.append([key, "list", [value], None])
     else:
-      if not isinstance(self.index[idx][1], list):
-        self.index[idx][1] = [value]
+      if self.index[idx][1] != "list":
+        self.index[idx][1] = "list"
+        self.index[idx][2] = [value]
       else:
-        self.index[idx][1].insert(0, value)
+        self.index[idx][2].insert(0, value)
     self._append_log(f"LPUSH {key} {value}\n")
-    return str(len(self.index[idx][1]))
+    return str(len(self.index[idx][2]))
 
   def rpush(self, key, value):
     # RPUSH command - lists requirement
     idx = self._find(key)
     if idx == -1:
-      self.index.append([key, [value], None])
+      self.index.append([key, "list", [value], None])
     else:
-      if not isinstance(self.index[idx][1], list):
-        self.index[idx][1] = [value]
+      if self.index[idx][1] != "list":
+        self.index[idx][1] = "list"
+        self.index[idx][2] = [value]
       else:
-        self.index[idx][1].append(value)
+        self.index[idx][2].append(value)
     self._append_log(f"RPUSH {key} {value}\n")
-    return str(len(self.index[idx][1]))
+    return str(len(self.index[idx][2]))
 
   def lrange(self, key, start, stop):
     # LRANGE command - lists requirement
     idx = self._find(key)
-    if idx != -1 and isinstance(self.index[idx][1], list):
-      lst = self.index[idx][1]
+    if idx != -1 and self.index[idx][1] == "list":
+      lst = self.index[idx][2]
       try:
         s = int(start)
         e = int(stop)
