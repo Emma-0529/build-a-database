@@ -12,7 +12,6 @@ def main():
     line = line.strip()
     if not line:
       continue
-    # Use split() to handle whitespace/tabs
     tokens = line.split()
     if not tokens:
       continue
@@ -22,54 +21,54 @@ def main():
     if cmd == "EXIT":
       break
     elif cmd == "SET" and len(tokens) >= 3:
-      print(db.set(tokens[1], " ".join(tokens[2:])))
+      print(db.set(tokens[1], " ".join(tokens[2:])), flush=True)
     elif cmd == "GET" and len(tokens) == 2:
-      print(db.get(tokens[1]))
+      print(db.get(tokens[1]), flush=True)
     elif cmd == "DEL" and len(tokens) == 2:
-      print(db.delete(tokens[1]))
+      print(db.delete(tokens[1]), flush=True)
     elif cmd == "EXISTS" and len(tokens) == 2:
-      print(db.exists(tokens[1]))
+      print(db.exists(tokens[1]), flush=True)
     elif cmd == "INCR" and len(tokens) == 2:
-      print(db.incr(tokens[1]))
+      print(db.incr(tokens[1]), flush=True)
     elif cmd == "DECR" and len(tokens) == 2:
-      print(db.decr(tokens[1]))
+      print(db.decr(tokens[1]), flush=True)
     elif cmd == "MSET" and len(tokens) >= 3:
-      print(db.mset(tokens[1:]))
+      print(db.mset(tokens[1:]), flush=True)
     elif cmd == "MGET" and len(tokens) >= 2:
       for r in db.mget(tokens[1:]):
-        print(r)
+        print(r, flush=True)
     elif cmd == "EXPIRE" and len(tokens) == 3:
-      print(db.expire(tokens[1], tokens[2]))
+      print(db.expire(tokens[1], tokens[2]), flush=True)
     elif cmd == "TTL" and len(tokens) == 2:
-      print(db.ttl(tokens[1]))
+      print(db.ttl(tokens[1]), flush=True)
     elif cmd == "RANGE" and len(tokens) == 3:
       for r in db.range_keys(tokens[1], tokens[2]):
-        print(r)
-      print("END")
+        print(r, flush=True)
+      print("END", flush=True)
     elif cmd == "HSET" and len(tokens) >= 4:
-      print(db.hset(tokens[1], tokens[2], " ".join(tokens[3:])))
+      print(db.hset(tokens[1], tokens[2], " ".join(tokens[3:])), flush=True)
     elif cmd == "HGET" and len(tokens) == 3:
-      print(db.hget(tokens[1], tokens[2]))
+      print(db.hget(tokens[1], tokens[2]), flush=True)
     elif cmd == "HGETALL" and len(tokens) == 2:
       for r in db.hgetall(tokens[1]):
-        print(r)
+        print(r, flush=True)
     elif cmd == "LPUSH" and len(tokens) >= 3:
-      print(db.lpush(tokens[1], " ".join(tokens[2:])))
+      print(db.lpush(tokens[1], " ".join(tokens[2:])), flush=True)
     elif cmd == "RPUSH" and len(tokens) >= 3:
-      print(db.rpush(tokens[1], " ".join(tokens[2:])))
+      print(db.rpush(tokens[1], " ".join(tokens[2:])), flush=True)
     elif cmd == "LRANGE" and len(tokens) == 4:
       for r in db.lrange(tokens[1], tokens[2], tokens[3]):
-        print(r)
+        print(r, flush=True)
     elif cmd == "BEGIN":
-      print(db.begin())
+      print(db.begin(), flush=True)
     elif cmd == "COMMIT":
-      print(db.commit())
+      print(db.commit(), flush=True)
     elif cmd == "ABORT":
-      print(db.abort())
+      print(db.abort(), flush=True)
     elif cmd == "FLUSHDB":
-      print(db.flush())
+      print(db.flush(), flush=True)
     else:
-      print(f"ERR unknown command '{cmd}'")
+      print(f"ERR unknown command '{cmd}'", flush=True)
 
 
 if __name__ == "__main__":
